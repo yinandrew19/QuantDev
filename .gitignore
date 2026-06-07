@@ -11,3 +11,14 @@ __pycache__
 # CDK asset staging directory
 .cdk.staging
 cdk.out
+
+# macOS metadata
+.DS_Store
+
+# Lambda layer is built from requirements_layer; never commit installed wheels
+lambda_layer/python/
+
+# Secrets / local env files
+.env
+.env.*
+!.env.example
