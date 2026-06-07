@@ -1,0 +1,14 @@
+Desired Data:
+MBA Refinance Index
+
+
+Mising Data component:
+1. Delta update
+
+
+Missing model Component:
+1. lagged mortgage rate (could be around 42 days or more) -> can research more
+
+Local Testing Command:
+1. Use makefile
+2. aws s3 rm s3://mbs-struct-bucket --recursive -> to empty local bucket

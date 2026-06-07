@@ -1,0 +1,357 @@
+Resources:
+  QuantRawDataBucket7A0735D8:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: mbs-struct-bucket
+      Tags:
+        - Key: aws-cdk:auto-delete-objects
+          Value: "true"
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: QuantDevStack/QuantRawDataBucket/Resource
+  QuantRawDataBucketPolicy9A29F23C:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: QuantRawDataBucket7A0735D8
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:DeleteObject*
+              - s3:GetBucket*
+              - s3:List*
+              - s3:PutBucketPolicy
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::GetAtt:
+                  - CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092
+                  - Arn
+            Resource:
+              - Fn::GetAtt:
+                  - QuantRawDataBucket7A0735D8
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - QuantRawDataBucket7A0735D8
+                        - Arn
+                    - /*
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: QuantDevStack/QuantRawDataBucket/Policy/Resource
+  QuantRawDataBucketAutoDeleteObjectsCustomResource640A9BCD:
+    Type: Custom::S3AutoDeleteObjects
+    Properties:
+      ServiceToken:
+        Fn::GetAtt:
+          - CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F
+          - Arn
+      BucketName:
+        Ref: QuantRawDataBucket7A0735D8
+    DependsOn:
+      - QuantRawDataBucketPolicy9A29F23C
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: QuantDevStack/QuantRawDataBucket/AutoDeleteObjectsCustomResource/Default
+  CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+      ManagedPolicyArns:
+        - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: QuantDevStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role
+  CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: faa95a81ae7d7373f3e1f242268f904eb748d8d0fdd306e8a6fe515a1905a7d6.zip
+      Timeout: 900
+      MemorySize: 128
+      Handler: index.handler
+      Role:
+        Fn::GetAtt:
+          - CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092
+          - Arn
+      Runtime: nodejs22.x
+      Description:
+        Fn::Join:
+          - ""
+          - - "Lambda function for auto-deleting objects in "
+            - Ref: QuantRawDataBucket7A0735D8
+            - " S3 bucket."
+    DependsOn:
+      - CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092
+    Metadata:
+      aws:cdk:path: QuantDevStack/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler
+      aws:asset:path: /private/var/folders/nv/jr9g8gfj2v536b09gjkk34g00000gn/T/cdk-custom-resourceDzSZNG
+      aws:asset:property: Code
+  RequestsLayer58858B55:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      CompatibleRuntimes:
+        - python3.12
+      Content:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: d8bbed82220dc6a9cf3babcb45816361e47e6e41d288634c08d152aad4f06824.zip
+      Description: A layer for the requests, yfinance library
+    Metadata:
+      aws:cdk:path: QuantDevStack/RequestsLayer/Resource
+      aws:asset:path: /Users/andrewyin/quantDev/lambda_layer
+      aws:asset:is-bundled: false
+      aws:asset:property: Content
+  IngestFunctionServiceRole55EB4427:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: QuantDevStack/IngestFunction/ServiceRole/Resource
+  IngestFunctionServiceRoleDefaultPolicy8EB1E4A7:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:Abort*
+              - s3:PutObject
+              - s3:PutObjectLegalHold
+              - s3:PutObjectRetention
+              - s3:PutObjectTagging
+              - s3:PutObjectVersionTagging
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - Fn::GetAtt:
+                      - QuantRawDataBucket7A0735D8
+                      - Arn
+                  - /*
+          - Action:
+              - ssm:DescribeParameters
+              - ssm:GetParameter
+              - ssm:GetParameterHistory
+              - ssm:GetParameters
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - ":ssm:"
+                  - Ref: AWS::Region
+                  - ":"
+                  - Ref: AWS::AccountId
+                  - :parameter/quant/fred-api-key
+        Version: "2012-10-17"
+      PolicyName: IngestFunctionServiceRoleDefaultPolicy8EB1E4A7
+      Roles:
+        - Ref: IngestFunctionServiceRole55EB4427
+    Metadata:
+      aws:cdk:path: QuantDevStack/IngestFunction/ServiceRole/DefaultPolicy/Resource
+  IngestFunction4B2F2EB2:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket:
+          Fn::Sub: cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}
+        S3Key: ecc55bb76f18fdff2f0ee97766c11be50551b30c23cd9fc5b99bdb54a66f5487.zip
+      Environment:
+        Variables:
+          BUCKET_NAME:
+            Ref: QuantRawDataBucket7A0735D8
+          FRED_API_KEY_PARAM: /quant/fred-api-key
+          AWS_ENDPOINT_URL: ""
+      Handler: ingest_data.handler
+      Layers:
+        - Ref: RequestsLayer58858B55
+      Role:
+        Fn::GetAtt:
+          - IngestFunctionServiceRole55EB4427
+          - Arn
+      Runtime: python3.12
+      Timeout: 45
+    DependsOn:
+      - IngestFunctionServiceRoleDefaultPolicy8EB1E4A7
+      - IngestFunctionServiceRole55EB4427
+    Metadata:
+      aws:cdk:path: QuantDevStack/IngestFunction/Resource
+      aws:asset:path: /Users/andrewyin/quantDev/lambda
+      aws:asset:is-bundled: false
+      aws:asset:property: Code
+  IngestFunctionLogGroup8E264078:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Join:
+          - ""
+          - - /aws/lambda/
+            - Ref: IngestFunction4B2F2EB2
+      RetentionInDays: 731
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: QuantDevStack/IngestFunction/LogGroup/Resource
+  DailyIngestionRuleAC2E5B5F:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: rate(1 day)
+      State: ENABLED
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - IngestFunction4B2F2EB2
+              - Arn
+          Id: Target0
+    Metadata:
+      aws:cdk:path: QuantDevStack/DailyIngestionRule/Resource
+  DailyIngestionRuleAllowEventRuleQuantDevStackIngestFunction2FE974F7072A3D6D:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - IngestFunction4B2F2EB2
+          - Arn
+      Principal: events.amazonaws.com
+      SourceArn:
+        Fn::GetAtt:
+          - DailyIngestionRuleAC2E5B5F
+          - Arn
+    Metadata:
+      aws:cdk:path: QuantDevStack/DailyIngestionRule/AllowEventRuleQuantDevStackIngestFunction2FE974F7
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/6VTyW7bMBD9lvAY0Gxjtxfd7HRBAaMV7KAXwQhocioz5mJwcSoQ+veCEqUodRME6EnCvOF782aZk/nHD+T9FX10M8aPMyn2JG49ZUdMH919dAsSV4EdwVcR0eDNJ5Dg4cf+AZh3qPA2AEb7LuM7VYAKdI0wsqDMmcrSSMEaVCAOzlvToHaHb3/pkVCJ30KjAk3Vk6xbkA5ypE9dXgi3O9xDvUQVcw2d/lRlxN+q1T/YeupBgZ5KraiDqrN3jXYtllTtOSVxTRuwP8E6YXQVk1VmxckLo3MzmOEw/qoT9WIvYRO0FwrcpOApEf4SNPM9I+izsEanajKNTJkOFamaHUaJyAR/KXegmkuww1B6yV4RR0Q5/zylnnj7T3A9re+1B/2jzv1gOP2XYJVwqQ8tdot76hx4R5bpgwVVJG6MhLSQzgUFfNWgIqKTFZqJE5VLxkwYe9XnpAdLNg6lxUhRTWvg3bhFmkPakUmsWdqcOzi4M+UgMSx2FTPqPWWHb1oKDSM2mn8VfJm3a0sqHOclTn4GujuTkAuVyzDnk11+Kvgf4U6vl2qxNLUjcW3qr9aEUxWRzL/jleelzeEWwzlxkbgJ3WwcOwAP8vm6pZSSeg+pt896QG2drndiPEhoW3wbnDdqA84Ey6Bf+ITmwF94ac1ZcLDpVHG3L1tPa6FrPGS0uGz8weh3C3IzJzeLqwcnxCyfBslX+Qd7T6aQFgUAAA==
+    Metadata:
+      aws:cdk:path: QuantDevStack/CDKMetadata/Default
+    Condition: CDKMetadataAvailable
+Conditions:
+  CDKMetadataAvailable:
+    Fn::Or:
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - af-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-northeast-3
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-south-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-3
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ap-southeast-4
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ca-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - ca-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - cn-northwest-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-central-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-north-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-south-2
+      - Fn::Or:
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - eu-west-3
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - il-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-central-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - me-south-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - sa-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-1
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-east-2
+          - Fn::Equals:
+              - Ref: AWS::Region
+              - us-west-1
+      - Fn::Equals:
+          - Ref: AWS::Region
+          - us-west-2
+Parameters:
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+

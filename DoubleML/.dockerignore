@@ -1,0 +1,6 @@
+# double_ml/.dockerignore
+__pycache__/
+*.pyc
+.venv/
+.git/
+localTest.py

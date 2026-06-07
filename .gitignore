@@ -5,6 +5,9 @@ __pycache__
 .venv
 *.egg-info
 
+# ignore local stack docker image
+.localstack
+
 # CDK asset staging directory
 .cdk.staging
 cdk.out

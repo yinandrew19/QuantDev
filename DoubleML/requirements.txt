@@ -1,0 +1,8 @@
+boto3
+pandas
+numpy
+scikit-learn
+lightgbm
+doubleml
+matplotlib       # for any plots you write to S3
+pyarrow          # parquet I/O — much faster than CSV for repeat runs
