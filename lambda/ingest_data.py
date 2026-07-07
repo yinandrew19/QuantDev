@@ -83,8 +83,8 @@ def FredData():
         "BaaLess10Y",
     ]
     FredDict = dict(zip(FredSeries, FredNames))
-    # set parameters to get the last 2 years of data
-    twenty_years_ago = datetime.now() - timedelta(days=int(365.25 * 50))
+
+    fifty_years_ago = datetime.now() - timedelta(days=int(365.25 * 50))
     observation_start = fifty_years_ago.strftime("%Y-%m-%d")
 
     for series_id in FredSeries:
@@ -108,6 +108,17 @@ def FredData():
 
         # 4. Save to S3
         # The bucket name was passed to Lambda via environment variable
+        # SUGGESTION (not applied): this key is overwritten every run, so
+        # there's no way to reconstruct what data was actually available on
+        # a past date. That breaks point-in-time-correct backtesting — a
+        # walk-forward backtest run today sees today's *current* FRED
+        # revision history applied to every past fold, which is leakage.
+        # Writing date-partitioned keys instead (e.g.
+        # f"raw/{name}_data/{today}.json") would let DoubleML/backtest.py
+        # (added separately) pin each fold to the data actually available
+        # as of that fold's date, and would also give you a proper
+        # Hive-style partitioned data lake for Glue/Athena if you want that
+        # later.
         s3.put_object(
             Bucket=bucket_name,
             # raw/{FredDict[series_id]}_data({today}).json -> to include date

@@ -6,3 +6,4 @@ lightgbm
 doubleml
 matplotlib       # for any plots you write to S3
 pyarrow          # parquet I/O — much faster than CSV for repeat runs
+optuna           # bayesian hyperparameter optimisation (replaces GridSearchCV)
